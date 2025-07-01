@@ -3,7 +3,7 @@ import prisma from '../../config/prisma.js';
 
 const router = express.Router();
 
-router.post('/reparador ', async (req, res) => {
+router.post('/reparador', async (req, res) => {
   try {
     const {
       nombres,
