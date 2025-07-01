@@ -1,0 +1,181 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "mysql"
+  url      = env("DATABASE_URL")
+}
+
+model certificado_reparador {
+  id_certificado_reparador Int       @id @default(autoincrement())
+  id_reparador             Int
+  certificado              String    @db.VarChar(500)
+  reparador                reparador @relation(fields: [id_reparador], references: [id_reparador], onDelete: NoAction, onUpdate: NoAction, map: "certificado_reparador_ibfk_1")
+
+  @@index([id_reparador], map: "id_reparador")
+}
+
+model cliente {
+  id_cliente            Int                  @id @default(autoincrement())
+  id_usuario            Int                  @unique(map: "id_usuario")
+  ubicacion             Unsupported("point")
+  promedio_calificacion Decimal              @default(0.0) @db.Decimal(2, 1)
+  cantidad_calificacion Int?                 @default(0)
+  usuario               usuario              @relation(fields: [id_usuario], references: [id_usuario], onDelete: NoAction, onUpdate: NoAction, map: "cliente_ibfk_1")
+  solicitud             solicitud[]
+
+  @@index([ubicacion(length: 32)], map: "ubicacion")
+}
+
+model especialidad {
+  id_especialidad        Int                      @id @default(autoincrement())
+  nombre                 String                   @unique(map: "nombre") @db.VarChar(20)
+  descripcion            String?                  @db.Text
+  reparador_especialidad reparador_especialidad[]
+}
+
+model estado_solicitud {
+  id_estado_solicitud        Int                          @id @default(autoincrement())
+  nombre                     String                       @unique(map: "nombre") @db.VarChar(30)
+  descripcion                String?                      @db.Text
+  historial_estado_solicitud historial_estado_solicitud[]
+  solicitud                  solicitud[]
+}
+
+model historial_estado_solicitud {
+  id_historial_estado_solicitud Int              @id @default(autoincrement())
+  id_estado_solicitud           Int
+  id_solicitud                  Int
+  fecha                         DateTime?        @default(now()) @db.DateTime(0)
+  estado_solicitud              estado_solicitud @relation(fields: [id_estado_solicitud], references: [id_estado_solicitud], onDelete: NoAction, onUpdate: NoAction, map: "historial_estado_solicitud_ibfk_1")
+  solicitud                     solicitud        @relation(fields: [id_solicitud], references: [id_solicitud], onDelete: NoAction, onUpdate: NoAction, map: "historial_estado_solicitud_ibfk_2")
+
+  @@index([id_estado_solicitud], map: "id_estado_solicitud")
+  @@index([id_solicitud], map: "id_solicitud")
+}
+
+model reparador {
+  id_reparador                  Int                      @id @default(autoincrement())
+  id_usuario                    Int                      @unique(map: "id_usuario")
+  cantidad_servicios_realizados Int                      @default(0)
+  disponibilidad                Boolean                  @default(true)
+  promedio_calificacion         Decimal                  @default(0.0) @db.Decimal(2, 1)
+  cantidad_calificacion         Int?                     @default(0)
+  certificado_reparador         certificado_reparador[]
+  usuario                       usuario                  @relation(fields: [id_usuario], references: [id_usuario], onDelete: NoAction, onUpdate: NoAction, map: "reparador_ibfk_1")
+  reparador_especialidad        reparador_especialidad[]
+  solicitud                     solicitud[]
+}
+
+model reparador_especialidad {
+  id_reparador_especialidad        Int                                @id @default(autoincrement())
+  id_reparador                     Int
+  id_especialidad                  Int
+  reparador                        reparador                          @relation(fields: [id_reparador], references: [id_reparador], onDelete: NoAction, onUpdate: NoAction, map: "reparador_especialidad_ibfk_1")
+  especialidad                     especialidad                       @relation(fields: [id_especialidad], references: [id_especialidad], onDelete: NoAction, onUpdate: NoAction, map: "reparador_especialidad_ibfk_2")
+  reparador_especialidad_solicitud reparador_especialidad_solicitud[]
+
+  @@unique([id_reparador, id_especialidad], map: "id_reparador")
+  @@index([id_especialidad], map: "id_especialidad")
+}
+
+model reparador_especialidad_solicitud {
+  id_reparador_especialidad_solicitud Int                    @id @default(autoincrement())
+  id_reparador_especialidad           Int
+  id_solicitud                        Int
+  reparador_especialidad              reparador_especialidad @relation(fields: [id_reparador_especialidad], references: [id_reparador_especialidad], onDelete: NoAction, onUpdate: NoAction, map: "reparador_especialidad_solicitud_ibfk_1")
+  solicitud                           solicitud              @relation(fields: [id_solicitud], references: [id_solicitud], onDelete: NoAction, onUpdate: NoAction, map: "reparador_especialidad_solicitud_ibfk_2")
+
+  @@unique([id_reparador_especialidad, id_solicitud], map: "id_reparador_especialidad")
+  @@index([id_solicitud], map: "id_solicitud")
+}
+
+model solicitud {
+  id_solicitud                     Int                                @id @default(autoincrement())
+  id_cliente                       Int
+  id_reparador                     Int?
+  id_estado_solicitud              Int                                @default(1)
+  descripcion                      String?                            @db.Text
+  fecha_solicitud                  DateTime?                          @default(now()) @db.DateTime(0)
+  monto                            Decimal?                           @db.Decimal(5, 2)
+  fecha_contrato                   DateTime?                          @db.DateTime(0)
+  fecha_finalizacion               DateTime?                          @db.DateTime(0)
+  ubicacion                        Unsupported("point")
+  historial_estado_solicitud       historial_estado_solicitud[]
+  reparador_especialidad_solicitud reparador_especialidad_solicitud[]
+  rese_a_a_cliente                 rese_a_a_cliente?
+  rese_a_a_reparador               rese_a_a_reparador?
+  cliente                          cliente                            @relation(fields: [id_cliente], references: [id_cliente], onDelete: NoAction, onUpdate: NoAction, map: "solicitud_ibfk_1")
+  reparador                        reparador?                         @relation(fields: [id_reparador], references: [id_reparador], onDelete: NoAction, onUpdate: NoAction, map: "solicitud_ibfk_2")
+  estado_solicitud                 estado_solicitud                   @relation(fields: [id_estado_solicitud], references: [id_estado_solicitud], onDelete: NoAction, onUpdate: NoAction, map: "solicitud_ibfk_3")
+
+  @@index([id_cliente], map: "id_cliente")
+  @@index([id_estado_solicitud], map: "id_estado_solicitud")
+  @@index([id_reparador], map: "id_reparador")
+  @@index([ubicacion(length: 32)], map: "ubicacion")
+}
+
+/// This table contains check constraints and requires additional setup for migrations. Visit https://pris.ly/d/check-constraints for more info.
+model usuario {
+  id_usuario               Int                        @id @default(autoincrement())
+  id_estado_usuario        Int
+  nombres                  String                     @db.VarChar(50)
+  apellidos                String                     @db.VarChar(50)
+  email                    String                     @unique(map: "email") @db.VarChar(254)
+  contrasena               String                     @db.VarChar(255)
+  telefono                 String                     @db.VarChar(9)
+  dni                      String                     @unique(map: "dni") @db.VarChar(8)
+  foto_perfil              String?                    @db.VarChar(500)
+  fecha_registro           DateTime?                  @default(now()) @db.DateTime(0)
+  cliente                  cliente?
+  historial_estado_usuario historial_estado_usuario[]
+  reparador                reparador?
+  estado_usuario           estado_usuario             @relation(fields: [id_estado_usuario], references: [id_estado_usuario], onDelete: NoAction, onUpdate: NoAction, map: "usuario_ibfk_1")
+
+  @@index([id_estado_usuario], map: "id_estado_usuario")
+}
+
+model estado_usuario {
+  id_estado_usuario        Int                        @id @default(autoincrement())
+  nombre                   String                     @unique(map: "nombre") @db.VarChar(30)
+  descripcion              String                     @db.Text
+  historial_estado_usuario historial_estado_usuario[]
+  usuario                  usuario[]
+}
+
+model historial_estado_usuario {
+  id_historial_estado_usuario Int            @id @default(autoincrement())
+  id_estado_usuario           Int            @default(1)
+  id_usuario                  Int
+  fecha                       DateTime?      @default(now()) @db.DateTime(0)
+  estado_usuario              estado_usuario @relation(fields: [id_estado_usuario], references: [id_estado_usuario], onDelete: NoAction, onUpdate: NoAction, map: "historial_estado_usuario_ibfk_1")
+  usuario                     usuario        @relation(fields: [id_usuario], references: [id_usuario], onDelete: NoAction, onUpdate: NoAction, map: "historial_estado_usuario_ibfk_2")
+
+  @@index([id_estado_usuario], map: "id_estado_usuario")
+  @@index([id_usuario], map: "id_usuario")
+}
+
+/// This table contains check constraints and requires additional setup for migrations. Visit https://pris.ly/d/check-constraints for more info.
+model rese_a_a_cliente {
+  id_rese_a_a_cliente Int       @id @default(autoincrement()) @map("id_reseña_a_cliente")
+  id_solicitud        Int       @unique(map: "id_solicitud")
+  calificacion        Int
+  comentario          String?   @db.Text
+  fecha               DateTime? @default(now()) @db.DateTime(0)
+  solicitud           solicitud @relation(fields: [id_solicitud], references: [id_solicitud], onDelete: NoAction, onUpdate: NoAction, map: "reseña_a_cliente_ibfk_1")
+
+  @@map("reseña_a_cliente")
+}
+
+/// This table contains check constraints and requires additional setup for migrations. Visit https://pris.ly/d/check-constraints for more info.
+model rese_a_a_reparador {
+  id_rese_a_a_reparador Int       @id @default(autoincrement()) @map("id_reseña_a_reparador")
+  id_solicitud          Int       @unique(map: "id_solicitud")
+  calificacion          Int       @db.TinyInt
+  comentario            String?   @db.Text
+  fecha                 DateTime? @default(now()) @db.DateTime(0)
+  solicitud             solicitud @relation(fields: [id_solicitud], references: [id_solicitud], onDelete: NoAction, onUpdate: NoAction, map: "reseña_a_reparador_ibfk_1")
+
+  @@map("reseña_a_reparador")
+}
