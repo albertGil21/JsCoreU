@@ -9,17 +9,21 @@ const router = express.Router();
 router.post('/login', async (req, res) => {
   try {
     const { email, contrasena } = req.body;
-    const usuario = await prisma.usuario.findUnique({ where: { email } });
+
+    // --- CAMBIO CLAVE AQUÍ ---
+    // Usamos 'include' para traer también los datos de la tabla 'reparador'
+    const usuario = await prisma.usuario.findUnique({
+      where: { email },
+      include: {
+        reparador: true, // Esto incluirá el perfil de reparador si existe
+      },
+    });
 
     if (!usuario) {
       return res.status(401).json({ error: 'Credenciales inválidas' });
     }
 
-    // Si usas contraseñas hasheadas, descomenta la siguiente línea:
-    // const valid = await bcrypt.compare(contrasena, usuario.contrasena);
-    // if (!valid) return res.status(401).json({ error: 'Credenciales inválidas' });
-
-    // Si guardas la contraseña en texto plano (no recomendado), usa:
+    // Compara la contraseña (usando el método que prefieras)
     if (usuario.contrasena !== contrasena) {
       return res.status(401).json({ error: 'Credenciales inválidas' });
     }
@@ -27,9 +31,12 @@ router.post('/login', async (req, res) => {
     // Generar token JWT
     const token = jwt.sign(
       { id_usuario: usuario.id_usuario, email: usuario.email },
-      process.env.JWT_SECRET || 'secreto', // Usa una variable de entorno segura
+      process.env.JWT_SECRET || 'secreto',
       { expiresIn: '1d' }
     );
+
+    // No es necesario enviar la contraseña en la respuesta
+    delete usuario.contrasena;
 
     res.json({ token, usuario });
   } catch (error) {
